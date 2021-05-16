@@ -799,7 +799,7 @@ int main(){
     save_entries(entries_file_name_final);
     entries.clear();
     cout << endl << "SAVED TO FILE: " << entries_file_name_final << endl;
-/*
+
     for(int i = 0; i < instancesSize.size(); i++){
 
         if(instancesSize[i] < 100) repetitions = 10000;
@@ -854,6 +854,5 @@ int main(){
     save_entries(entries_file_name_final);
     entries.clear();
     cout << endl << "SAVED TO FILE: " << entries_file_name_final << endl;
-*/
     return 0;
 }

@@ -57,7 +57,7 @@ bool load_data(string standard_filename, int n) {
 
 bool load_config() {
     ifstream fileInput;
-    fileInput.open("config_list.ini", ios::in);
+    fileInput.open("config.ini", ios::in);
     if(fileInput.fail()) {
         fileInput.close();
         return false;
