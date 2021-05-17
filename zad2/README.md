@@ -1,5 +1,8 @@
 # Data structures and algorithms - project
 ## Exercise 2
+
+### This is an exercise, which may (and likely does) contain errors!
+
 Time and memory analysis for QuickSort and O(n).
 To generate `csv` file with necessary data you can use `generate_random`.
 The main analysis is conducted within `zad1`.
