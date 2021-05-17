@@ -374,10 +374,15 @@ void insertAVL(AVLNode *&root, int key) {
         bool t = false;
         while (grandparent != NULL) {
             if (grandparent->bf) {
+                t = true;
+                break;
+            };
+            if (grandparent->left == parent) {
                 grandparent->bf = 1;
             } else {
                 grandparent->bf = -1;
             }
+
             parent = grandparent;
             grandparent = grandparent->parent;
         }
