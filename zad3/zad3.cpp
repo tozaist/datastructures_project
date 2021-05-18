@@ -165,7 +165,9 @@ void save_entries(string entries_file_name) {
     fileOutput.close();
 }
 
-// Drzewo AVL
+// Wezel AVL:
+// Zawiera wskaznik na rodzica i dwoch synow
+// Poza tym klucz i wspolczynnik rownowagi - bf
 struct AVLNode {
     AVLNode *parent;
     AVLNode *left;
@@ -174,6 +176,7 @@ struct AVLNode {
     int bf;
 };
 
+// Funkcja rekurencyjnie usuwajaca drzewo AVL
 void DFSRelease (AVLNode *n) {
     if (n) {
         DFSRelease (n->left);
@@ -182,6 +185,10 @@ void DFSRelease (AVLNode *n) {
     }
 }
 
+// Obrot w prawo wzgledem wezla a
+// Wezel b zajmuje miejsce wezla a
+// Wezel a staje sie lewym synem wezla b
+// Lewy syn wezla b staje sie prawym synem wezla a
 void rightRight(AVLNode *&root, AVLNode *a) {
     AVLNode *b = a->right;
     AVLNode *parent = a->parent;
@@ -213,6 +220,10 @@ void rightRight(AVLNode *&root, AVLNode *a) {
     }
 }
 
+// Obrot w lewo wzgledem wezla a
+// Wezel b zajmuje miejsce wezla a
+// Wezel a staje sie prawym synem wezla b
+// Prawy syn wezla b staje sie lewym synem wezla a
 void leftLeft(AVLNode *&root, AVLNode *a) {
     AVLNode *b = a->left;
     AVLNode *parent = a->parent;
@@ -243,6 +254,12 @@ void leftLeft(AVLNode *&root, AVLNode *a) {
     }
 }
 
+// Zlozenie rotacji LL i RR wzgledem wezla a
+// Wezel c zajmuje miejsce wezla a
+// Wezel a staje sie lewym synem wezla c
+// Lewy syn wezla c staje sie prawym synem wezla a
+// Wezel b staje sie prawym synem wezla c
+// Prawy syn wezla c staje sie lewym synem wezla b
 void rightLeft(AVLNode *&root, AVLNode *a) {
     AVLNode *b = a->right;
     AVLNode *c = b->left;
@@ -286,6 +303,12 @@ void rightLeft(AVLNode *&root, AVLNode *a) {
     c->bf = 0;
 }
 
+// Zlozenie rotacji RR i LL wzgledem wezla a
+// Wezel c zajmuje miejsce wezla a
+// Wezel a staje sie prawym synem wezla c
+// Prawy syn wezla c staje sie lewym synem wezla a
+// Wezel b staje sie lewym synem wezla c
+// Lewy syn wezla c staje sie prawym synem wezla b
 void leftRight(AVLNode *&root, AVLNode *a) {
     AVLNode *b = a->left;
     AVLNode *c = b->right;
@@ -330,7 +353,12 @@ void leftRight(AVLNode *&root, AVLNode *a) {
     c->bf = 0;
 }
 
+// Wstawienie nowego wezla z kluczem key
+// W pierwszym etapie do drzewa wstawiany jest nowy wezel, jak w BST
+// W drugim etapie, idac w kierunku korzenia, aktualizowane sa wspolczynniki bf
+// W przypadku bf rownego 2 lub -2 drzewo jest rownowazone
 void insertAVL(AVLNode *&root, int key) {
+    // Utworz nowy wezel z podanym kluczem
     AVLNode *newNode = new AVLNode;
     newNode->left = NULL;
     newNode->right = NULL;
@@ -338,6 +366,7 @@ void insertAVL(AVLNode *&root, int key) {
     newNode->key = key;
     newNode->bf = 0;
 
+    // Wstaw wezel w drzewo, jak w BST
     AVLNode *parent = root;
     if (parent == NULL) {
         root = newNode;
@@ -359,7 +388,8 @@ void insertAVL(AVLNode *&root, int key) {
         }
     }
     newNode->parent = parent;
-    parent = root;
+    
+    // Sprawdzanie bf, idace w gore
     if (parent->bf) {
         parent->bf = 0;
     } else {
@@ -413,6 +443,7 @@ void insertAVL(AVLNode *&root, int key) {
     }
 }
 
+// Otrzymanie poprzednika wezla n
 AVLNode *predecessor (AVLNode *n) {
     AVLNode *o;
 
@@ -432,6 +463,8 @@ AVLNode *predecessor (AVLNode *n) {
     return n;
 }
 
+// Wyszukuje wezla o podanym key
+// Zwraca znaleziony wezel lub NULL
 AVLNode *searchAVL(AVLNode *&root, int key) {
     AVLNode *n = root;
     while (n && n->key != key) {
@@ -440,94 +473,157 @@ AVLNode *searchAVL(AVLNode *&root, int key) {
     return n;
 }
 
+// Usuwa wezel n z drzewa
 AVLNode *deleteAVL (AVLNode *&root, AVLNode *n) {
+    // Utworz wezly pomocnicze i zmienna logiczna zagniezdzenia
     AVLNode *o, *p, *r;
     bool nested;
+
+    // Jezeli wezel pusty, zwroc pusty wezel
     if (n == NULL) {
         return n;
     }
+
     if (n->left != NULL && n->right != NULL) {
+        // Wezel posiada 2 synow
+        // Rekurencyjnie usun poprzednik wezla
         o = deleteAVL(root, predecessor(n));
+        // Zeruj zagniezdzenie
         nested = false;
     } else {
+        // Wezel posiada 0-1 syna
         if (n->left != NULL) {
+            // Wezel posiada lewego syna
+            // Zapamietaj syna i usun go z wezla
             o = n->left;
             n->left = NULL;
         } else {
+            // Wezel posiada prawego syna, lub nie
+            // Zapamietaj syna i usun go z wezla
             o = n->right;
             n->right = NULL;
         }
+        // Syn trafil do wezla o, bf wezla to 0
         n->bf = 0;
+        // Wystapilo zagniezdzenie
         nested = true;
     }
     if (o != NULL) {
+        // Jezeli wezel mial syna, wstaw go w miejsce wezla
         o->parent = n->parent;
         o->left = n->left;
         o->right = n->right;
         o->bf = n->bf;
         if (o->left != NULL) {
+            // Jezeli lewy syn istnieje, jego ojcem staje sie o
             o->left->parent = o;
         }
         if (o->right != NULL) {
+            // Jezeli prawy syn istnieje, jego ojcem staje sie o
             o->right->parent = o;
         }
     }
 
     if (n->parent != NULL) {
+        // Jezeli wezel posiada ojca
         if (n->parent->left == n) {
+            // Lewym synem ojca wezla staje sie o
             n->parent->left = o;
         } else {
+            // Prawym synem ojca wezla staje sie o
             n->parent->right = o;
         }
     } else {
+        // Jezeli wezel nie posiada ojca
+        // o staje sie korzeniem
         root = o;
     }
     
     if (nested) {
+        // Jezeli wystapilo zagniezdzenie
+        // Ustaw wskaźniki pomocniczne, idziemy w kierunku korzenia
         p = o;
+        // o to rodzic usuwanego wezla
         o = n->parent;
         while (o != NULL) {
+            // Jezel o nie jest puste
             if (!o->bf) {
+                // Jezeli bf o nie jest pusty 
                 if (o->left == p) {
+                    // Jezeli p jest lewym synem o
+                    // Ustaw bf o na -1
                     o->bf = -1;
                 } else {
+                    // Jezeli p nie jest lewym synem o
+                    // Ustaw bf o na 1
                     o->bf = 1;
                 }
                 break;
             } else {
+                // Jezeli bf o jest pusty
                 if (((o->bf == 1) && (o->left == p)) || ((o->bf == -1) && (o->right == p))) {
+                    // Jezeli bf o jest rowny 1 i lewy syn o to p
+                    // lub jezeli bf o jest rowny -1 i prawy syn o to p
+
+                    // Przechodzimy na wyzszy poziom drzewa
                     o->bf = 0;
                     r = o;
                     o = o->parent;
                 } else {
+                    // Jezeli bf o nie jest rowny 1 lub lewym synem nie jest p
+                    // lub jezeli bf o nie jest rowny -1 lub jego prawym synem nei jest p  
                     if (o->left == p) {
+                        // Jezeli lewym synem o jest p
+                        // Ustaw r na prawego syna o
                         r = o->right;
                     } else {
+                        // Jezeli lewym synem o nie jest p
+                        // Ustaw r na lewego syna o
                         r = o->left;
                     }
                     if (!r->bf) {
+                        // Jezeli bf r jest psuty
                         if (o->bf == 1) {
+                            // Jezeli bf o jest rowny 1
+                            // Obroc w lewo w o
                             leftLeft(root, o);
                         } else {
+                            // Jezeli bf o nie jest rowny 1
+                            // Obroc w prawo w o
                             rightRight(root, o);
                         }
                         break;
                     } else {
+                        // Jezeli bf r nie jest pusty
                         if (o->bf == r->bf) {
+                            // Jezeli bf o jest rowny bf r
                             if (o->bf == 1) {
+                                // Jezeli bf o jest rowny 1
+                                // Obroc w lewo w o
                                 leftLeft(root, o);
                             } else {
+                                // Jezeli bf o jest rowny 1
+                                // Obroc w lewo w o
                                 rightRight(root, o);
                             }
+                            // Przejdz wyzej
+                            // Ustaw p jako r
                             p = r;
                             o = r->parent;
                         }
                         else {
+                            // Jezeli bf o nie jest rowny bf r
                             if (o->bf == 1) {
+                                // Jezeli bf o jest rowny 1
+                                // Obroc w lewo w o
                                 leftRight(root, o);
                             } else {
+                                // Jezeli bf o jest rowny 1
+                                // Obroc w lewo w o
                                 rightLeft(root, o);
                             }
+                            // Przejdz wyzej
+                            // Ustaw r jako rodzica o
                             r = o->parent;
                             o = r->parent;
                         }
@@ -536,18 +632,9 @@ AVLNode *deleteAVL (AVLNode *&root, AVLNode *n) {
             }
         }
     }
+    // Zwroc usuwany wezel
     return n;
 }
-
-void printAVL(AVLNode *n) {
-    AVLNode *temp = n;
-    if (temp != NULL) {
-        printAVL(temp->left);
-        printAVL(temp->right);
-    }
-}
-
-// Drzewo czerwono-czarne
 
 // Kolor wezla drzewa RB
 enum Color {
@@ -555,6 +642,9 @@ enum Color {
     BLACK
 };
 
+// Wezel czerwono-czarny:
+// Zawiera wskaznik na rodzica i dwoch synow
+// Poza tym klucz i zmienna typu Color 
 struct RBNode {
     RBNode *parent;
     RBNode *left;
@@ -563,6 +653,8 @@ struct RBNode {
     Color color;
 };
 
+// Drzewo czerwono-czarne
+// Klasa zawierajaca operacje na drzewie czerwono-czarnym
 class RBTree {
     private:
     RBNode g;
@@ -581,6 +673,7 @@ class RBTree {
     void deleteRB (RBNode *n);
 };
 
+// Konstruktor klasy drzewa czerwono-czarnego
 RBTree::RBTree() {
     g.color = BLACK;
     g.parent = &g;
@@ -589,10 +682,12 @@ RBTree::RBTree() {
     root = &g;
 }
 
+// Destruktor klasy drzewa czerwono-czarnego
 RBTree::~RBTree() {
     DFSRelease (root);
 }
 
+// Funkcja rekurencyjnie usuwajaca drzewo czerwono-czarne
 void RBTree::DFSRelease(RBNode *n) {
     if (n != &g) {
         DFSRelease(n->left);
@@ -601,6 +696,8 @@ void RBTree::DFSRelease(RBNode *n) {
     }
 }
 
+// Wyszukuje wezla o podanym key
+// Zwraca znaleziony wezel lub NULL
 RBNode * RBTree::searchRB (int k) {
     RBNode *n;
 
@@ -618,6 +715,7 @@ RBNode * RBTree::searchRB (int k) {
     return n;
 }
 
+// Otrzymanie wezla z najmniejszym kluczem
 RBNode * RBTree::minRB (RBNode *n) {
     if (n != &g) {
         while (n->left != &g) {
@@ -627,6 +725,7 @@ RBNode * RBTree::minRB (RBNode *n) {
     return n;
 }
 
+// Otrzymanie nastepnika wezla n
 RBNode * RBTree::succRB (RBNode *n) {
     RBNode *o;
 
@@ -645,6 +744,10 @@ RBNode * RBTree::succRB (RBNode *n) {
     return &g;
 }
 
+// Obrot w lewo wzgledem wezla a
+// Wezel b zajmuje miejsce wezla a
+// Wezel a staje sie lewym synem wezla b
+// Lewy syn wezla b staje sie prawym synem wezla a
 void RBTree::rotateLeft (RBNode *a) {
     RBNode *b = a->right;
     RBNode *n;
@@ -672,6 +775,10 @@ void RBTree::rotateLeft (RBNode *a) {
     }
 }
 
+// Obrot w prawo wzgledem wezla a
+// Wezel b zajmuje miejsce wezla a
+// Wezel a staje sie prawym synem wezla b
+// Prawy syn wezla b staje sie lewym synem wezla a
 void RBTree::rotateRight (RBNode *a) {
     RBNode *b = a->left;
     RBNode *n;
@@ -699,6 +806,10 @@ void RBTree::rotateRight (RBNode *a) {
     }
 }
 
+// Wstawienie nowego wezla z kluczem key
+// Do drzewa wstawiany jest nowy wezel, jak w BST
+// Jest kolorowany na czerwono
+// Po tym sprawdzane jest czy warunki drzewa czerwono-czarnego zostaly zaburzone
 void RBTree::insertRB (int k) {
     RBNode *a = new RBNode;
     a->parent = root;
@@ -773,6 +884,7 @@ void RBTree::insertRB (int k) {
     }
 }
 
+// Usuwa wezel n z drzewa
 void RBTree::deleteRB (RBNode *a) {
     RBNode *b;
     RBNode *c;
