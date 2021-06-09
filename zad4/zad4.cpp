@@ -198,18 +198,18 @@ struct  AdjMatrixNode
 class AdjacencyMatrix
 {
     private:
-    AdjMatrixNode   *nodes;
+    AdjMatrixNode   *vertices;
     bool            **edges;
     int             number_vertices;
 
     public:
     AdjacencyMatrix(int nVertices, double density)
     {
-        nodes=new AdjMatrixNode[nVertices];
+        vertices=new AdjMatrixNode[nVertices];
         for(int i=0; i<nVertices; i++)
         {
-            nodes[i].n=i;
-            nodes[i].val=standard_vector[i];
+            vertices[i].n=i;
+            vertices[i].val=standard_vector[i];
         }
 
         edges=new bool*[nVertices];
@@ -220,10 +220,10 @@ class AdjacencyMatrix
         }
 
         this->number_vertices=nVertices;
-        this->addEdges(density);
+        this->fillEdges(density);
     }
 
-    void addEdges(double density)
+    void fillEdges(double density)
     {
         // D = (2|E|) / (|V|(|V|-1)) -> |E| = (D(|V|(|V|-1)))/2
         int nEdges = (density*(this->number_vertices*(this->number_vertices-1)))/2;
@@ -256,19 +256,88 @@ class AdjacencyMatrix
         }
     }
 
-    void addVertex(int val)
+    void insertVertex(int val)
     {
-        this->number_vertices++;
+        this->number_vertices=this->number_vertices+1;
+
+        AdjMatrixNode *newVertices = new AdjMatrixNode[this->number_vertices];
+        memcpy(newVertices, this->vertices, (this->number_vertices-1)*sizeof(AdjMatrixNode));
+        newVertices[this->number_vertices-1].n=newVertices[this->number_vertices-2].n + 1;
+        newVertices[this->number_vertices-1].val = val;
+        
+        delete[] this->vertices;
+        this->vertices = newVertices;
 
         bool **newEdges = new bool*[this->number_vertices];
+        memcpy(newEdges, this->edges, (this->number_vertices-1)*sizeof(bool));
+        for(int i=0; i<this->number_vertices-1; i++)
+        {
+            newEdges[i] = new bool[this->number_vertices];
+            memcpy(newEdges[i], edges[i], (this->number_vertices-1)*sizeof(bool));
+            newEdges[i][this->number_vertices-1] = 0;
+        }
+        memset(newEdges[this->number_vertices-1], 0, (this->number_vertices)*sizeof(bool));
 
+        delete[] this->edges;
+        this->edges = newEdges;
+    }
+
+    void removeVertex(int n)
+    {
+        int i,j;
+
+        this->number_vertices=this->number_vertices-1;
+
+        AdjMatrixNode *newVertices = new AdjMatrixNode[this->number_vertices];
+        memcpy(newVertices, this->vertices, n*sizeof(AdjMatrixNode));
+        memcpy(newVertices + n, vertices + n+1, (this->number_vertices-n)*sizeof(AdjMatrixNode));
+
+        for(i=0; i<this->number_vertices; i++)
+            newVertices[i].n = i;
+
+        delete[] this->vertices;
+        this->vertices = newVertices;
+
+        bool **newEdges = new bool*[this->number_vertices];
+        memcpy(newEdges, this->edges, n*sizeof(bool));
+        memcpy(newEdges + n, edges + n+1, (this->number_vertices-n)*sizeof(bool));
+
+        for(i=j=0; i<this->number_vertices+1; i++)
+        {
+            if (i == n)
+                continue;
+            newEdges[j] = new bool[this->number_vertices];
+            memcpy(newEdges[j], this->edges[i], n*sizeof(bool));
+            memcpy(newEdges[j] + n, edges[i] + n+1, (this->number_vertices-n)*sizeof(bool));
+            j++;
+        }
+
+        delete[] this->edges;
+        this->edges = newEdges;
+    }
+
+    bool insertEdge(int u, int v)
+    {
+        if (this->edges[u][v] == 1)
+            return false;
+        this->edges[u][v]=1;
+        this->edges[v][u]=1;
+        return true;
+    }
+
+    bool removeEdge(int u, int v)
+    {
+        if (this->edges[u][v] == 0)
+            return false;
+        this->edges[u][v]=0;
+        this->edges[v][u]=0;
+        return true;
     }
 
     void print()
     {
         for(int i=0; i<this->number_vertices; i++)
-            cout << nodes[i].n << " | " << nodes[i].val << endl;
-
+            cout << vertices[i].n << " | " << vertices[i].val << endl;
         for(int i=0; i<this->number_vertices; i++)
         {
             for(int j=0; j<this->number_vertices; j++)
@@ -286,7 +355,13 @@ class AdjacencyList
 int main()
 {
     load_data("standard.csv", 1000);
-    int nVertices = 50;
-    AdjacencyMatrix *matrix = new AdjacencyMatrix(nVertices, 0.2);
+    int nVertices = 3;
+    AdjacencyMatrix *matrix = new AdjacencyMatrix(nVertices, 0);
+    matrix->print();
+    matrix->insertEdge(1,2);
+    cout << "========\n";
+    matrix->print();
+    matrix->removeEdge(1,2);
+    cout << "========\n";
     matrix->print();
 }
