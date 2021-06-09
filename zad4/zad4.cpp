@@ -194,12 +194,30 @@ struct  AdjMatrixNode
     }
 };
 
+struct  AdjMatrixEdge
+{
+    bool    connected;
+    int     weight;
+
+    AdjMatrixEdge(bool connected, int weight)
+    {
+        this->connected = connected;
+        this->weight = weight;
+    }
+
+    AdjMatrixEdge()
+    {
+        this->connected = false;
+        this->weight = 0;
+    }
+};
+
 // Macierz sasiedztwa
 class AdjacencyMatrix
 {
     private:
     AdjMatrixNode   *vertices;
-    bool            **edges;
+    AdjMatrixEdge   **edges;
     int             number_vertices;
 
     public:
@@ -212,10 +230,10 @@ class AdjacencyMatrix
             vertices[i].val=standard_vector[i];
         }
 
-        edges=new bool*[nVertices];
+        edges=new AdjMatrixEdge*[nVertices];
         for(int i=0; i<nVertices; i++)
         {
-            edges[i] = new bool[nVertices];
+            edges[i] = new AdjMatrixEdge[nVertices];
             memset(edges[i], 0, nVertices*sizeof(bool));
         }
 
@@ -231,7 +249,8 @@ class AdjacencyMatrix
         time_t t;
         mt19937 rng(time(&t));
         uniform_int_distribution<int> distr1(0, this->number_vertices-1);
-        uniform_int_distribution<int> distr2(0, this->number_vertices-2);        
+        uniform_int_distribution<int> distr2(0, this->number_vertices-2);   
+        uniform_int_distribution<int> weightDistr(1, 20);     
         int i,j;
 
         while (nEdges > 0)
@@ -247,10 +266,12 @@ class AdjacencyMatrix
             else
                 j=distr4(rng);
 
-            if(edges[i][j] != true)
+            if(!edges[i][j].connected)
             {
-                edges[i][j] = true;
-                edges[j][i] = true;
+                edges[i][j].connected   = true;
+                edges[j][i].connected   = true;
+                edges[i][j].weight      = weightDistr(rng);
+                edges[j][i].weight      = edges[i][j].weight;
                 nEdges--;
             }
         }
@@ -268,15 +289,15 @@ class AdjacencyMatrix
         delete[] this->vertices;
         this->vertices = newVertices;
 
-        bool **newEdges = new bool*[this->number_vertices];
-        memcpy(newEdges, this->edges, (this->number_vertices-1)*sizeof(bool));
+        AdjMatrixEdge **newEdges = new AdjMatrixEdge*[this->number_vertices];
+        memcpy(newEdges, this->edges, (this->number_vertices-1)*sizeof(AdjMatrixEdge));
         for(int i=0; i<this->number_vertices-1; i++)
         {
-            newEdges[i] = new bool[this->number_vertices];
-            memcpy(newEdges[i], edges[i], (this->number_vertices-1)*sizeof(bool));
-            newEdges[i][this->number_vertices-1] = 0;
+            newEdges[i] = new AdjMatrixEdge[this->number_vertices];
+            memcpy(newEdges[i], edges[i], (this->number_vertices-1)*sizeof(AdjMatrixEdge));
+            newEdges[i][this->number_vertices-1].connected = false;
         }
-        memset(newEdges[this->number_vertices-1], 0, (this->number_vertices)*sizeof(bool));
+        memset(newEdges[this->number_vertices-1], 0, (this->number_vertices)*sizeof(AdjMatrixEdge));
 
         delete[] this->edges;
         this->edges = newEdges;
@@ -298,17 +319,17 @@ class AdjacencyMatrix
         delete[] this->vertices;
         this->vertices = newVertices;
 
-        bool **newEdges = new bool*[this->number_vertices];
-        memcpy(newEdges, this->edges, n*sizeof(bool));
-        memcpy(newEdges + n, edges + n+1, (this->number_vertices-n)*sizeof(bool));
+        AdjMatrixEdge **newEdges = new AdjMatrixEdge*[this->number_vertices];
+        memcpy(newEdges, this->edges, n*sizeof(AdjMatrixEdge));
+        memcpy(newEdges + n, edges + n+1, (this->number_vertices-n)*sizeof(AdjMatrixEdge));
 
         for(i=j=0; i<this->number_vertices+1; i++)
         {
             if (i == n)
                 continue;
-            newEdges[j] = new bool[this->number_vertices];
-            memcpy(newEdges[j], this->edges[i], n*sizeof(bool));
-            memcpy(newEdges[j] + n, edges[i] + n+1, (this->number_vertices-n)*sizeof(bool));
+            newEdges[j] = new AdjMatrixEdge[this->number_vertices];
+            memcpy(newEdges[j], this->edges[i], n*sizeof(AdjMatrixEdge));
+            memcpy(newEdges[j] + n, edges[i] + n+1, (this->number_vertices-n)*sizeof(AdjMatrixEdge));
             j++;
         }
 
@@ -318,19 +339,24 @@ class AdjacencyMatrix
 
     bool insertEdge(int u, int v)
     {
-        if (this->edges[u][v] == 1)
+        if (this->edges[u][v].connected)
             return false;
-        this->edges[u][v]=1;
-        this->edges[v][u]=1;
+        time_t t;
+        mt19937 rng(time(&t));   
+        uniform_int_distribution<int> weightDistr(1, 20);     
+        this->edges[u][v].connected = true;
+        this->edges[v][u].connected = true;
+        this->edges[u][v].weight    = weightDistr(rng);
+        this->edges[v][u].weight    = this->edges[u][v].weight;
         return true;
     }
 
     bool removeEdge(int u, int v)
     {
-        if (this->edges[u][v] == 0)
+        if (!this->edges[u][v].connected)
             return false;
-        this->edges[u][v]=0;
-        this->edges[v][u]=0;
+        this->edges[u][v].connected=false;
+        this->edges[v][u].connected=false;
         return true;
     }
 
@@ -341,7 +367,7 @@ class AdjacencyMatrix
         for(int i=0; i<this->number_vertices; i++)
         {
             for(int j=0; j<this->number_vertices; j++)
-                cout << edges[i][j] << " ";
+                cout << edges[i][j].connected << " ";
             cout << endl;
         }
     }
